@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
+
 main_url="http://kinogo.club"
 url_const="http://kinogo.club/page/"
 
@@ -49,8 +50,6 @@ def main():
             iter_film = film(shortstory)
             print(iter_film.link)
             #iter_film.statist
-
-            ics();
 
 
 if __name__ == '__main__':
