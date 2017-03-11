@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+import sensitive_analysis
 
 
 main_url="http://kinogo.club"
@@ -15,25 +16,60 @@ def get_html(url):
 class film:
     def __init__(self, shortstory):
         self.link = shortstory.find('h2', class_='zagolovki').a.get('href').strip()
-        #info = shortstory.find('div', class_='shortimg').get_text()
-        #self.description = re.match(r'(.*)Год выпуска.*', info).group(1);
-        #self.production_year = re.match(r'.*Год выпуска:\s*(.*)Страна.*', info).group(1);
-        #self.country = re.match(r'.*Страна:\s*(.*)Жанр.*', info).group(1);
-        #self.video = re.match(r'.*Качество:\s*(.*)Перевод.*', info).group(1);
-        #self.audio = re.match(r'.*Перевод:\s*(.*)Продолжительность.*', info).group(1);
-        #self.time = re.match(r'.*Продолжительность:\s*(.*)Премьера.*', info).group(1);
+        info_with_blank_lines = shortstory.find('div', class_='shortimg').get_text()
+        lines = info_with_blank_lines.split('\n')
+        info=""
+        for line in lines:
+            if not re.match(r'^\s*$', line):
+                info = info + line
+        try:
+            self.description = re.match(r'(.*)Год выпуска.*', info).group(0);
+        except:
+            self.description = ""
+        try:
+            self.production_year = re.match(r'.*Год выпуска:\s*(.*)Страна.*', info).group(1);
+        except:
+            self.production_year = 0
+        try:
+            self.country = re.match(r'.*Страна:\s*(.*)Жанр.*', info).group(1);
+        except:
+            self.country = ""
+        try:
+            self.video = re.match(r'.*Качество:\s*(.*)Перевод.*', info).group(1);
+        except:
+            self.video = ""
+        try:
+            self.audio = re.match(r'.*Перевод:\s*(.*)Продолжительность.*', info).group(1);
+        except:
+            self.audio =""
+        try:
+            self.time = re.match(r'.*Продолжительность:\s*(.*)Премьера.*', info).group(1);
+        except:
+            self.time = ""
 
-    def statistics(self):
         soup = get_html(self.link)
-        comments = soup.find_all('div', class_='comentarii')
+        comment_elements = soup.find_all('div', class_='comentarii')
+        self.comments = []
+        for element in comment_elements:
+            self.comments.append(element.get_text())
         self.like = 0
         self.dislike = 0
-        for comment in comments:
-            pass
-        if not (self.like == 0 and self.dislike == 0):
-            self.rating = self.like / (self.like + self.dislike)
+        self.rating = 0
 
-
+    def statistics(self):
+        try:
+            features = sensitive_analysis.vectorizer.transform(self.comments)
+            prediction = sensitive_analysis.lr.predict(features)
+            for score in prediction:
+                if score > 7:
+                    self.like = self.like + 1
+                else:
+                    self.dislike = self.dislike + 1
+            if not (self.like == 0 and self.dislike == 0):
+                self.rating = int(self.like / (self.like + self.dislike) * 100)
+        except:
+            self.like = 0
+            self.dislike = 0
 
 
 
@@ -48,8 +84,8 @@ def main():
         shortstories = soup.find_all('div', class_='shortstory')
         for shortstory in shortstories:
             iter_film = film(shortstory)
-            print(iter_film.link)
-            #iter_film.statist
+            iter_film.statistics()
+            print(iter_film.link, ":", iter_film.rating)
 
 
 if __name__ == '__main__':
