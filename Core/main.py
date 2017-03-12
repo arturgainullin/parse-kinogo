@@ -91,7 +91,7 @@ def main():
             iter_film = film(shortstory)
             iter_film.statistics()
             films.append(iter_film)
-            films.sort(key=key_func, reverse=True)
+    films.sort(key=key_func, reverse=True)
     #print 5 best movies
     for i in range(5):
         print(films[i])
