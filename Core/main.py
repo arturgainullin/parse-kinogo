@@ -4,6 +4,7 @@ import re
 import sensitive_analysis
 
 
+
 main_url="http://kinogo.club"
 url_const="http://kinogo.club/page/"
 
@@ -61,7 +62,7 @@ class film:
             features = sensitive_analysis.vectorizer.transform(self.comments)
             prediction = sensitive_analysis.lr.predict(features)
             for score in prediction:
-                if score > 7:
+                if score > 8:
                     self.like = self.like + 1
                 else:
                     self.dislike = self.dislike + 1
@@ -71,22 +72,29 @@ class film:
             self.like = 0
             self.dislike = 0
 
+    def __str__(self):
+        return self.link + " Rating: " + str(self.rating)
 
+def key_func(film):
+    return film.rating
 
 def main():
     soup = get_html(main_url)
     #get pages amount
     pages_num = soup.find('div', class_='bot-navigation').find_all('a')[-2].contents
-
-    for page in range(1, 5):#pages_num + 1):
+    films = []
+    for page in range(1, int(pages_num[0]) + 1):
         url = url_const + str(page)
         soup = get_html(url)
         shortstories = soup.find_all('div', class_='shortstory')
         for shortstory in shortstories:
             iter_film = film(shortstory)
             iter_film.statistics()
-            print(iter_film.link, ":", iter_film.rating)
-
+            films.append(iter_film)
+            films.sort(key=key_func, reverse=True)
+    #print 5 best movies
+    for i in range(5):
+        print(films[i])
 
 if __name__ == '__main__':
     main()
