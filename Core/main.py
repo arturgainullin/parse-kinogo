@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import sensitive_analysis
+import csv
 
 
 
@@ -17,6 +18,7 @@ def get_html(url):
 class film:
     def __init__(self, shortstory):
         self.link = shortstory.find('h2', class_='zagolovki').a.get('href').strip()
+        self.title = shortstory.find('h2', class_='zagolovki').get_text()
         info_with_blank_lines = shortstory.find('div', class_='shortimg').get_text()
         lines = info_with_blank_lines.split('\n')
         info=""
@@ -84,16 +86,33 @@ def main():
     pages_num = soup.find('div', class_='bot-navigation').find_all('a')[-2].contents
     films = []
     for page in range(1, int(pages_num[0]) + 1):
+        print(page)
         url = url_const + str(page)
         soup = get_html(url)
         shortstories = soup.find_all('div', class_='shortstory')
         for shortstory in shortstories:
             iter_film = film(shortstory)
+            if not ("Дублированный" in iter_film.audio):
+                continue
+            if not ("HDRip" in iter_film.video):
+                continue
+            if int(iter_film.production_year) < 1995:
+                continue
+            if len(iter_film.comments) < 5:
+                continue
             iter_film.statistics()
             films.append(iter_film)
     films.sort(key=key_func, reverse=True)
-    #print 5 best movies
-    for i in range(5):
+    with open('rating.csv', 'w') as result:
+        writer = csv.writer(result)
+        writer.writerow(["Название", "Рейтинг", "Ссылка", "Год выпуска", "Страна", "Качество видео", "Перевод", "Продолжительность"])
+        for f in films:
+            writer.writerow([f.title, f.rating, f.link, f.production_year, f.country, f.video, f.audio, f.time])
+
+    result.close()
+
+    #print 10 best movies
+    for i in range(10):
         print(films[i])
 
 if __name__ == '__main__':
